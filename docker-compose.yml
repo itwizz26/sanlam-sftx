@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:16-alpine
+    container_name: sftx-postgres-db
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
@@ -10,6 +11,7 @@ services:
 
   api:
     build: .
+    container_name: stfx-api-service
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - .:/code
@@ -19,6 +21,18 @@ services:
       DATABASE_URL: ${DATABASE_URL}
     depends_on:
       - db
+    develop:
+      watch:
+        - path: .
+          target: /code
+          action: sync
+          ignore:
+            - .git/
+            - venv/
+            - __pycache__/
+            - db.sqlite3
+        - path: ./requirements.txt
+          action: rebuild
 
 volumes:
   postgres_data:
