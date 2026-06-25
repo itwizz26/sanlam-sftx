@@ -4,7 +4,11 @@ from django.core.validators import MinValueValidator
 from decimal import Decimal
 
 class Account(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE,
+        related_name='wallet'
+    )
     balance = models.DecimalField(
         max_digits=12, 
         decimal_places=2, 
