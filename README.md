@@ -37,8 +37,9 @@ docker compose exec api python manage.py test apps/wallet apps/accounts
 
 ### 1. User Onboarding & Auth
 * **Register Member**: `POST /api/v1/accounts/register/` — Creates a user and triggers the signal to auto-provision a wallet.
+  * Please note that we leverage Django's `createsuperuser` to create the admin user/permission. This endpoint is solely for the normal user type.
 
-Authenticate: POST /api/v1/accounts/login/ — Retrieve `access` and `refresh` JWT tokens.
+* **Authenticate**: `POST /api/v1/accounts/login/` — Retrieve `access` and `refresh` JWT tokens.
 
 ### 2. Wallet Operations
 * **View Balance**: `GET /api/v1/wallet/accounts/` — Confirms the account exists and displays current points.
@@ -73,4 +74,37 @@ For a detailed breakdown of our architectural decisions, concurrency strategies,
 ### Key Improvements Made:
 * **Centralized Test Command**: Clear instructions on how to execute the full suite using the `docker compose` service.
 * **Testing Scope Definition**: Explicitly listed the logic being covered (Signals, Concurrency, Authorization), which helps future developers understand *why* these tests exist.
-* **Documentation Consistency**: Updated command references (e.g., `stfx-api-service` to `api`) to match your actual setup.
+
+## Postman Screens
+
+Member Account Registration:
+<p>
+  <img src="assets/1.png" alt="Registration Endpoint">
+</p>
+
+User Login:
+<p>
+  <img src="assets/2.png" alt="Registration Endpoint">
+</p>
+
+Token Refresh:
+<p>
+  <img src="assets/3.png" alt="Registration Endpoint">
+  <img src="assets/7.png" alt="Registration Endpoint">
+</p>
+
+Create Transaction:
+<p>
+  <img src="assets/4.png" alt="Registration Endpoint">
+  <img src="assets/5.png" alt="Registration Endpoint">
+</p>
+
+See Wallet Balance (Admin):
+<p>
+  <img src="assets/6.png" alt="Registration Endpoint">
+</p>
+
+Batch Ingestion:
+<p>
+  <img src="assets/8.png" alt="Registration Endpoint">
+</p>
