@@ -5,7 +5,6 @@ from .serializers import TransactionSerializer, AccountSerializer
 from .services import execute_transaction
 
 class AccountViewSet(viewsets.ReadOnlyModelViewSet):
-    """Admin can list all, Members can only see their own."""
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdmin]
     serializer_class = AccountSerializer
 
@@ -24,5 +23,4 @@ class TransactionViewSet(viewsets.ModelViewSet):
         return Transaction.objects.filter(account__user=self.request.user)
 
     def perform_create(self, serializer):
-        # Member can only post to their own wallet
         execute_transaction(self.request.user.wallet, serializer.validated_data)
