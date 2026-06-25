@@ -1,32 +1,47 @@
-# Solution Design
+# Comprehensive Solution Design
 
 ## 1. Technology Choices
-- **Django REST Framework (DRF)**: Chosen for its robust serialization, built-in permission system, and mature API development patterns.
-- **PostgreSQL**: Selected over SQLite for production-grade ACID compliance, robust handling of concurrent transactions, and row-level locking capabilities.
-- **Docker**: Used to create a reproducible, containerized environment that includes the database, ensuring parity between local development and production environments.
+* **Django REST Framework (DRF)**: Chosen for its robust serialization, built-in permission system, and mature API development patterns.
+* **PostgreSQL**: Selected for production-grade ACID compliance, robust handling of concurrent transactions, and row-level locking capabilities.
+* **Docker**: Used to create a reproducible, containerized environment, ensuring parity between local development and production.
+* **JWT (SimpleJWT)**: Implemented for stateless, scalable authentication across distributed service components.
 
-## 2. Data Model & Integrity
-- **Account Model**: Designed with a `OneToOne` relationship to the user model. The `balance` is stored as a `DecimalField` to prevent floating-point arithmetic errors common in financial calculations.
-- **Transaction Model**: 
-    - Designed as an immutable record. 
-    - The `ref` field is marked as `unique=True` and indexed (`db_index=True`) to offload duplicate detection to the database engine, ensuring efficiency and data consistency.
-- **Audit Logging**: A dedicated `AuditLog` model is implemented to track all transaction attempts, providing an immutable record for debugging batch ingestion failures and business rule rejections.
+---
 
-## 3. Concurrency Strategy
-To handle concurrent requests for the same account (a common requirement in loyalty/financial systems):
-- **Database Transactions**: All financial operations are wrapped in `transaction.atomic()` to ensure atomicity.
-- **Pessimistic Locking**: We utilize `select_for_update()` on the `Account` model. This locks the specific account row upon selection, ensuring that concurrent processes wait in line rather than reading or writing stale balance data.
+## 2. System Architecture & Data Flow
+The system follows a decoupled architecture where the **Account** acts as the aggregate root.
 
-## 4. Authentication & Access Control
-- **Protocol**: Implemented Stateless JWT (JSON Web Tokens) using `djangorestframework-simplejwt`. This avoids server-side session overhead and is ideal for API-first services.
-- **Access Model**:
-    - **Roles**: Used Django's built-in `Group` and `is_staff` flag to differentiate between `Member` and `Admin`.
-    - **Enforcement**: Implemented a custom `IsOwnerOrAdmin` permission class. This encapsulates the logic for data isolation, ensuring a Member cannot access another Member's balance via `GET` or `POST` requests.
+* **Registration**: Auto-provisioning via `post_save` signals ensures every user has an `Account` on creation.
+* **Transaction Flow**: Requests pass through the `TransactionViewSet`, trigger the `execute_transaction` service, and are committed within a PostgreSQL-locked transaction block.
 
-## 5. Configuration Management
-- **Security**: Eliminated hardcoded secrets (`SECRET_KEY`, `DATABASE_URL`) by migrating to `django-environ`. This ensures that sensitive credentials never enter version control (Git).
-- **Environment Parity**: By using `env.db()`, the application dynamically configures its database connection based on the provided URL, allowing the exact same code to run in local Docker containers and production cloud environments without modification.
 
-## 6. AI Implementation Workflow
-- **Project Structure**: Adopted the "apps/" pattern for better modularity and separation of concerns between `accounts` (user management) and `wallet` (loyalty logic).
-- **Environment**: Defined a `docker-compose.yml` with a `watch` service configuration to enable real-time code synchronization, speeding up the development cycle.
+
+---
+
+## 3. Concurrency & Integrity
+* **Pessimistic Locking**: We use `select_for_update()` to lock account balances during the read-modify-write cycle. This ensures that even under high concurrency, no balance is ever overwritten by stale data.
+* **Arithmetic Safety**: We use `DecimalField` to ensure 100% precision for financial point calculations, avoiding the inaccuracies inherent in floating-point math.
+
+---
+
+## 4. Security Model
+* **Authentication**: JWT-based stateless authentication.
+* **Authorization**:
+    * **Admins**: Full access for batch ingestion and global transaction visibility.
+    * **Members**: Restricted via `IsOwnerOrAdmin` permissions and `get_queryset` filtering to ensure data isolation.
+* **Audit**: Every transaction attempt—success or failure—is recorded in the `AuditLog` with a timestamp and reference, creating a transparent trail for manual ledger reconciliation.
+
+---
+
+## 5. Batch Ingestion Logic
+The system implements a fault-tolerant CSV ingestion pipeline:
+1.  **Parsing**: Streaming via `csv.DictReader` for efficient memory management.
+2.  **Validation**: Every row is checked for type-safety (`Decimal` conversion) and record existence.
+3.  **Isolation**: Individual failures (e.g., duplicate reference or insufficient funds) are caught; the system commits successful rows independently and returns a comprehensive error summary.
+
+---
+
+## 6. Development Infrastructure
+* **CI/CD Readiness**: `docker-compose` orchestration ensures identical behavior across Dev, Staging, and Production environments.
+* **Environment Parity**: Utilizes `django-environ` for secure configuration, ensuring zero hardcoded secrets.
+* **Developer Experience**: Configured with Docker volume mapping to enable real-time code synchronization for rapid development cycles.
