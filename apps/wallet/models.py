@@ -16,6 +16,9 @@ class Account(models.Model):
     )
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        app_label = 'wallet'
+
     def __str__(self):
         return f"Account {self.user.username} - Balance: {self.balance}"
 
@@ -30,6 +33,7 @@ class Transaction(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        app_label = 'wallet'
         ordering = ['-occurred_at']
 
 class AuditLog(models.Model):
@@ -37,3 +41,6 @@ class AuditLog(models.Model):
     status = models.CharField(max_length=20)
     reason = models.TextField(blank=True, null=True)
     timestamp = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        app_label = 'wallet'

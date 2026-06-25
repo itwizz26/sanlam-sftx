@@ -3,27 +3,28 @@ from .models import Account, Transaction, AuditLog
 from decimal import Decimal
 
 def execute_transaction(account, data):
+    # Ensure points is a Decimal
     points = Decimal(str(data['points']))
+    
     with transaction.atomic():
-        # Prevents other processes from modifying this account until we finish
         acc = Account.objects.select_for_update().get(pk=account.pk)
         
-        # Duplicate Check
         if Transaction.objects.filter(ref=data['ref']).exists():
             AuditLog.objects.create(ref=data['ref'], status='REJECTED', reason='Duplicate Reference')
             return False, "Transaction with this reference already exists."
 
-        # Balance Logic
         if data['kind'] == 'spend':
-            if acc.balance < data['points']:
+            if acc.balance < points: # Compare using the casted Decimal
                 AuditLog.objects.create(ref=data['ref'], status='REJECTED', reason='Insufficient Balance')
                 return False, "Insufficient balance."
-            acc.balance -= data['points']
+            acc.balance -= points
         else:
-            acc.balance += data['points']
+            acc.balance += points
 
         acc.save()
-        Transaction.objects.create(account=acc, **data)
+        # Create transaction with the correctly typed points
+        Transaction.objects.create(account=acc, ref=data['ref'], kind=data['kind'], 
+                                   points=points, occurred_at=data['occurred_at'])
         AuditLog.objects.create(ref=data['ref'], status='ACCEPTED')
         
         return True, "Success"

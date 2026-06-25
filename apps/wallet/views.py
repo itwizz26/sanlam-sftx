@@ -30,8 +30,15 @@ class TransactionViewSet(viewsets.ModelViewSet):
             return Transaction.objects.all()
         return Transaction.objects.filter(account__user=self.request.user)
 
-    def perform_create(self, serializer):
-        execute_transaction(self.request.user.wallet, serializer.validated_data)
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        success, message = execute_transaction(request.user.wallet, serializer.validated_data)
+        if not success:
+            return Response({"error": message}, status=400)
+        
+        return Response({"status": "success", "message": message}, status=201)
 
 class BatchTransactionView(APIView):
     parser_classes = [MultiPartParser]
