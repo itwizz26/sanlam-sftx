@@ -16,6 +16,9 @@ DEBUG = env('DEBUG')
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['127.0.0.1', 'localhost'])
 
+# Use our custom user auth model
+AUTH_USER_MODEL = 'accounts.User'
+
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.auth',
