@@ -1,7 +1,9 @@
 from django.db import transaction
 from .models import Account, Transaction, AuditLog
+from decimal import Decimal
 
 def execute_transaction(account, data):
+    points = Decimal(str(data['points']))
     with transaction.atomic():
         # Prevents other processes from modifying this account until we finish
         acc = Account.objects.select_for_update().get(pk=account.pk)

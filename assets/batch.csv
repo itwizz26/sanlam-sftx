@@ -1,0 +1,5 @@
+ref,account_id,kind,points,occurred_at
+tx-batch-001,1,earn,500.00,2026-06-25T12:00:00Z
+tx-batch-002,1,spend,100.00,2026-06-25T12:05:00Z
+tx-batch-003,1,spend,5000.00,2026-06-25T12:10:00Z
+tx-batch-001,1,earn,10.00,2026-06-25T12:15:00Z
